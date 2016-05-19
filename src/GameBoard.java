@@ -35,13 +35,30 @@ public class GameBoard implements Serializable{
 	}
 	
 	
-	public boolean checkField(int x, int y){
-		if(boardArray[x][y]==1){
-			boardArray[x][y]=2;
-			fieldsLeft--;
+	public boolean anyShipsLeft(){
+		for(int i=0;i<10;i++){
+			for(int j=0;j<10;j++){
+				if(boardArray[i][j]==1){
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	
+//	public boolean checkField(int x, int y){
+//		if(boardArray[x][y]==1){
+//			return true;
+//		}
+//		else return false;
+//	}
+	public boolean shoot(int i, int j){
+		if(boardArray[i][j]==1){
+			boardArray[i][j]=2;
 			return true;
 		}
-		else return false;
+		return false;
 	}
 	
 	public boolean putShip(ShipType ship, String orientation, int x, int y ){

@@ -67,7 +67,7 @@ public class Client {
 	}
 
 
-	
+
 
 
 	static void startServer(int port)throws IOException {
@@ -221,418 +221,290 @@ public class Client {
 				System.out.println("Podaj nazwe wczytywanego pliku");
 				loadFromFile(input.nextLine());
 			}
+
+			Message msg_1=new Message(MsgType.READY, gm.convertBoardToString());
+			try{
+				sendMessageToOpponent(msg_1);
+			}
+			catch(Exception e){
+				System.out.println(e);
+			}
+			Message msg_2=new Message();
+			try{
+				msg_2=getMessageFromOpponent();
+			}
+			catch(Exception e){
+				System.out.println(e);
+			}
+			System.out.println(msg_2.msgContent);
+
+
 			if(choice_int==1){
-				Message msg_1=new Message(MsgType.READY, gm.convertBoardToString());
+				System.out.println("Podaj typ wiadomosci (CHAT(C), COORDINATES(CO),ZAPISZ GRE(S), ZAKONCZ GRE(E))");
+				String type=input.nextLine();
+				if(type.equals("E")){
+					breaking = true;
+				}
+
+				System.out.println("Podaj tresc wiadomosci");
+				String content=input.nextLine();
+
+
+				MsgType typ=MsgType.CHAT;
+				Message msg1=new Message();
+				if(type.equals("C")){
+					typ=MsgType.CHAT;
+					msg1=new Message(typ,content);
+				}
+				else if(type.equals("CO")){
+					typ=MsgType.COORDINATES;
+					msg1=new Message(typ,content);
+				}
+				else if(type.equals("RESULTS")){
+					typ=MsgType.RESULTS;
+					//content=GameBoardPrinter.getBoardString(gm);
+					msg1=new Message(typ,gm);
+
+				}
+				else if(type.equals("S")) {
+					typ=MsgType.SAVE_GAME;
+					System.out.println("Podaj nazwe pliku");
+					String filename=input.nextLine();
+					saveToFile(filename);
+					msg1=new Message(typ,"");
+				}
+
 				try{
-					sendMessageToOpponent(msg_1);
+					sendMessageToOpponent(msg1);
 				}
 				catch(Exception e){
-					System.out.println(e);
+					System.out.println("exception");
 				}
-				Message msg_2=new Message();
+				if(type.equals("S")){
+				}
+			}
+
+
+
+			while(true){
+				Message msg2=new Message();
+
 				try{
-					msg_2=getMessageFromOpponent();
+					msg2=getMessageFromOpponent();
 				}
 				catch(Exception e){
-					System.out.println(e);
+					System.out.println("Nie udalo sie odebrac wiadomosci");
 				}
-				System.out.println(msg_2.msgContent);
-				while(true){
+				if(msg2.msgType==MsgType.RESULTS2){
+					System.out.println("Plansza przeciwnika wygladala nastepujaco:");
 
-					System.out.println("Podaj typ wiadomosci (CHAT(C), COORDINATES(CO),ZAPISZ GRE(S), ZAKONCZ GRE(E))");
-					String type=input.nextLine();
-					if(type.equals("E")){
-						breaking = true;
-						break;
-					}
-
-					System.out.println("Podaj tresc wiadomosci");
-					String content=input.nextLine();
-
-
-					MsgType typ=MsgType.CHAT;
-					Message msg1=new Message();
-					if(type.equals("C")){
-						typ=MsgType.CHAT;
-						msg1=new Message(typ,content);
-					}
-					else if(type.equals("CO")){
-						typ=MsgType.COORDINATES;
-						msg1=new Message(typ,content);
-					}
-					else if(type.equals("RESULTS")){
-						typ=MsgType.RESULTS;
-						//content=GameBoardPrinter.getBoardString(gm);
-						msg1=new Message(typ,gm);
-
-					}
-					else if(type.equals("S")) {
-						typ=MsgType.SAVE_GAME;
-						System.out.println("Podaj nazwe pliku");
-						String filename=input.nextLine();
-						saveToFile(filename);
-						msg1=new Message(typ,"");
-					}
-
+					System.out.println(GameBoardPrinter.getBoardString(msg2.g));
+					System.out.println(msg2.g.convertBoardToString());
+					System.out.println("Przeciwnik wyszedl z gry, wygrales walkowerem!");
+					MsgType m=MsgType.RESULTS2;
+					//String cnt=GameBoardPrinter.getBoardString(gm);
+					Message msg=new Message(m,gm);
 					try{
-						sendMessageToOpponent(msg1);
+						sendMessageToOpponent(msg);
 					}
 					catch(Exception e){
 						System.out.println("exception");
 					}
-					if(type.equals("S")){
-						break;
-					}
 
-					Message msg2=new Message();
-
-					try{
-						msg2=getMessageFromOpponent();
-					}
-					catch(Exception e){
-						System.out.println("nie odebralem wiadomosci");
-					}
-					if(msg2.msgType==MsgType.RESULTS2){
-						System.out.println("Plansza przeciwnika wygladala nastepujaco:");
-
-
-
-						System.out.println(GameBoardPrinter.getBoardString(msg2.g));
-						System.out.println(msg2.g.convertBoardToString());
-						System.out.println("Przeciwnik wyszedl z gry, wygrales walkowerem!");
-						MsgType m=MsgType.RESULTS2;
-
-						Message msg=new Message(m,gm);
-						try{
-							sendMessageToOpponent(msg);
-						}
-						catch(Exception e){
-							System.out.println("exception");
-						}
-						input.close();
-						break;
-					}
-					else if(msg2.msgType==MsgType.SAVE_GAME){
-						System.out.println("Przeciwnik chce zapisac gre, podaj nazwe pliku");
-						String filename=input.nextLine();
-						saveToFile(filename);
-						break;
-					}
-					else if(msg2.msgType==MsgType.COORDINATES){
-						String coordinate=msg2.msgContent;
-						x=0;
-						y=0;
-
-						for(int i=0;i<10;i++){
-							for(int j=0;j<10;j++){
-								if(pola[i][j].equals((String)coordinate)){
-									x=i;
-									y=j;
-
-								}
-							}
-						}
-						if(gm.checkField(x, y)==true){
-							System.out.println("Przeciwnik trafil w Twoj statek");
-							if(gm.fieldsLeft==1){
-								System.out.println("Przegrales");
-								MsgType typee=MsgType.RESULTS;
-
-								Message last_msg=new Message(typee,gm);
-								try{
-									sendMessageToOpponent(last_msg);
-								}
-								catch(Exception e){
-									System.out.println("exception");
-								}
-								break;
-							}
-							else{
-								while((gm.boardArray[x][y]==1 || gm.boardArray[x][y]==2) && gm.fieldsLeft!=0){
-									if(gm.fieldsLeft==1){
-										end_game=true;
-										System.out.println("Przegrales");
-										MsgType typee=MsgType.RESULTS;
-										System.out.println(gm.fieldsLeft);
-										Message last_msg=new Message(typee,gm);
-										try{
-											sendMessageToOpponent(last_msg);
-										}
-										catch(Exception e){
-											System.out.println("exception");
-										}
-										break;
-									}
-									gm.checkField(x, y);
-									MsgType typee=MsgType.CHAT;
-									String contentt="Trafiles w statek przeciwnika!";
-									Message last_msg=new Message(typee,contentt);
-									try{
-										sendMessageToOpponent(last_msg);
-									}
-									catch(Exception e){
-										System.out.println("exception");
-									}
-
-									Message last_msg2=new Message();
-									try{
-										last_msg2=getMessageFromOpponent();
-									}
-									catch(Exception e){
-										System.out.println("exception");
-									}
-									String coordinate2=last_msg2.msgContent;
-									x=0;
-									y=0;
-
-									for(int i=0;i<10;i++){
-										for(int j=0;j<10;j++){
-											if(pola[i][j].equals((String)coordinate2)){
-												x=i;
-												y=j;
-
-											}
-										}
-									}
-								}
-								
-							}
-							if(end_game==true){
-								break;
-							}
-						}
-						else{
-							System.out.println("Przeciwnik chybil");
-						}
-
-						System.out.println(GameBoardPrinter.getBoardString(gm));
-
-					}
-					else if(msg2.msgType==MsgType.CHAT){
-						System.out.println(msg2.msgContent);
-					}
-					else if(msg2.msgType==MsgType.RESULTS){
-						System.out.println("Wygrales!");
-						//MsgType typee=MsgType.RESULTS;
-
-						/*Message last_msg=new Message(typee,gm);
-						try{
-							sendMessageToOpponent(last_msg);
-						}
-						catch(Exception e){
-							System.out.println("exception");
-						}*/
-						break;
-					}
+					break;
 				}
-			}
-			else{
-
-				Message msg_2=new Message();
-				try{
-					msg_2=getMessageFromOpponent();
+				else if(msg2.msgType==MsgType.SAVE_GAME){
+					System.out.println("Przeciwnik chce zapisac gre, podaj nazwe pliku");
+					String filename=input.nextLine();
+					saveToFile(filename);
+					break;
 				}
-				catch(Exception e){
-					System.out.println(e);
-				}
-				System.out.println(msg_2.msgContent);
-				Message msg_1=new Message(MsgType.READY, gm.convertBoardToString());
-				try{
-					sendMessageToOpponent(msg_1);
-				}
-				catch(Exception e){
-					System.out.println(e);
-				}
-				while(true){
-					Message msg2=new Message();
+				else if(msg2.msgType==MsgType.COORDINATES){
+					String coordinate=msg2.msgContent;
+					x=0;
+					y=0;
 
-					try{
-						msg2=getMessageFromOpponent();
-					}
-					catch(Exception e){
-						System.out.println("Nie udalo sie odebrac wiadomosci");
-					}
-					if(msg2.msgType==MsgType.RESULTS2){
-						System.out.println("Plansza przeciwnika wygladala nastepujaco:");
+					for(int i=0;i<10;i++){
+						for(int j=0;j<10;j++){
+							if(pola[i][j].equals((String)coordinate)){
+								x=i;
+								y=j;
 
-						System.out.println(GameBoardPrinter.getBoardString(msg2.g));
-						System.out.println(msg2.g.convertBoardToString());
-						System.out.println("Przeciwnik wyszedl z gry, wygrales walkowerem!");
-						MsgType m=MsgType.RESULTS2;
-						//String cnt=GameBoardPrinter.getBoardString(gm);
-						Message msg=new Message(m,gm);
-						try{
-							sendMessageToOpponent(msg);
-						}
-						catch(Exception e){
-							System.out.println("exception");
-						}
-
-						break;
-					}
-					else if(msg2.msgType==MsgType.SAVE_GAME){
-						System.out.println("Przeciwnik chce zapisac gre, podaj nazwe pliku");
-						String filename=input.nextLine();
-						saveToFile(filename);
-						break;
-					}
-					else if(msg2.msgType==MsgType.COORDINATES){
-						String coordinate=msg2.msgContent;
-						x=0;
-						y=0;
-
-						for(int i=0;i<10;i++){
-							for(int j=0;j<10;j++){
-								if(pola[i][j].equals((String)coordinate)){
-									x=i;
-									y=j;
-
-								}
 							}
 						}
-						if(gm.checkField(x,y)==true){
-							System.out.println("Przeciwnik trafil w Twoj statek");
-							if(gm.fieldsLeft==1){
-								System.out.println("Przegrales");
-								MsgType typee=MsgType.RESULTS;
-								//String contentt=GameBoardPrinter.getBoardString(gm);
-								Message last_msg=new Message(typee,gm);
-								try{
-									sendMessageToOpponent(last_msg);
-								}
-								catch(Exception e){
-									System.out.println("exception");
-								}
-								break;
+					}
+					if(gm.shoot(x,y)==true){
+						if(gm.anyShipsLeft()==false){
+							MsgType typee=MsgType.RESULTS;
+							Message last_msg=new Message(typee,gm);
+							try{
+								sendMessageToOpponent(last_msg);
 							}
-
-							else{
-								while((gm.boardArray[x][y]==1 || gm.boardArray[x][y]==2) && gm.fieldsLeft!=0){
-									if(gm.fieldsLeft==1){
-										end_game=true;
-										System.out.println("Przegrales");
-										MsgType typee=MsgType.RESULTS;
-										System.out.println(gm.fieldsLeft);
-										//String contentt=GameBoardPrinter.getBoardString(gm);
-										Message last_msg=new Message(typee,gm);
-										try{
-											sendMessageToOpponent(last_msg);
-										}
-										catch(Exception e){
-											System.out.println("exception");
-										}
-										break;
-									}
-									
-									gm.checkField(x, y);
-									MsgType typee=MsgType.CHAT;
-									String contentt="Trafiles w statek przeciwnika!";
-									Message last_msg=new Message(typee,contentt);
-									try{
-										sendMessageToOpponent(last_msg);
-									}
-									catch(Exception e){
-										System.out.println("exception");
-									}
-
-									Message last_msg2=new Message();
-									try{
-										last_msg2=getMessageFromOpponent();
-									}
-									catch(Exception e){
-										System.out.println("exception");
-									}
-									String coordinate2=last_msg2.msgContent;
-									x=0;
-									y=0;
-
-									for(int i=0;i<10;i++){
-										for(int j=0;j<10;j++){
-											if(pola[i][j].equals((String)coordinate2)){
-												x=i;
-												y=j;
-
-											}
-										}
-									}
-									
-								}
-								if(end_game==true){
-									break;
-								}
+							catch(Exception e){
+								System.out.println("exception");
 							}
 
 						}
 						else{
-							System.out.println("Przeciwnik chybil");
+							System.out.println("Przeciwnik trafil w Twoj statek");
+
+
+							MsgType typee=MsgType.WAS_HIT;
+							Message last_msg=new Message(typee,gm);
+							try{
+								sendMessageToOpponent(last_msg);
+							}
+							catch(Exception e){
+								System.out.println("exception");
+							}
+
+
 						}
 
-						System.out.println(GameBoardPrinter.getBoardString(gm));
+
+						//						if(gm.fieldsLeft==1){
+						//							System.out.println("Przegrales");
+						//							MsgType typee=MsgType.RESULTS;
+						//							//String contentt=GameBoardPrinter.getBoardString(gm);
+						//							Message last_msg=new Message(typee,gm);
+						//							try{
+						//								sendMessageToOpponent(last_msg);
+						//							}
+						//							catch(Exception e){
+						//								System.out.println("exception");
+						//							}
+						//							break;
+						//						}
+						//
+						//						else{
+						//							while((gm.boardArray[x][y]==1 || gm.boardArray[x][y]==2) && gm.fieldsLeft!=0){
+						//								if(gm.fieldsLeft==1){
+						//									end_game=true;
+						//									System.out.println("Przegrales");
+						//									MsgType typee=MsgType.RESULTS;
+						//									System.out.println(gm.fieldsLeft);
+						//									//String contentt=GameBoardPrinter.getBoardString(gm);
+						//									Message last_msg=new Message(typee,gm);
+						//									try{
+						//										sendMessageToOpponent(last_msg);
+						//									}
+						//									catch(Exception e){
+						//										System.out.println("exception");
+						//									}
+						//									break;
+						//								}
+						//
+						//								gm.checkField(x, y);
+						//								MsgType typee=MsgType.CHAT;
+						//								String contentt="Trafiles w statek przeciwnika!";
+						//								Message last_msg=new Message(typee,contentt);
+						//								try{
+						//									sendMessageToOpponent(last_msg);
+						//								}
+						//								catch(Exception e){
+						//									System.out.println("exception");
+						//								}
+						//
+						//								Message last_msg2=new Message();
+						//								try{
+						//									last_msg2=getMessageFromOpponent();
+						//								}
+						//								catch(Exception e){
+						//									System.out.println("exception");
+						//								}
+						//								String coordinate2=last_msg2.msgContent;
+						//								x=0;
+						//								y=0;
+						//
+						//								for(int i=0;i<10;i++){
+						//									for(int j=0;j<10;j++){
+						//										if(pola[i][j].equals((String)coordinate2)){
+						//											x=i;
+						//											y=j;
+						//
+						//										}
+						//									}
+						//								}
+						//
+						//							}
+						//							if(end_game==true){
+						//								break;
+						//							}
+						//						}
+						continue;
 					}
-					else if(msg2.msgType==MsgType.CHAT){
-						System.out.println(msg2.msgContent);
-					}
-					else if(msg2.msgType==MsgType.RESULTS){
-						System.out.println("Wygrales!");
-						MsgType typee=MsgType.RESULTS;
-						//String contentt=GameBoardPrinter.getBoardString(gm);
-						Message last_msg=new Message(typee,gm);
-						try{
-							sendMessageToOpponent(last_msg);
-						}
-						catch(Exception e){
-							System.out.println("exception");
-						}
-						break;
+					else{
+						System.out.println("Przeciwnik chybil");
 					}
 
-					System.out.println("Podaj typ wiadomosci (CHAT(C), COORDINATES(CO),ZAPISZ GRE(S), ZAKONCZ GRE(E))");
-					String type=input.nextLine();
-					if(type.equals("E")){
-						breaking=true;
-						break;
-					}
-
-					System.out.println("Podaj tresc wiadomosci");
-					String content=input.nextLine();
-
-
-					MsgType typ=MsgType.CHAT;
-					Message msg1=new Message();
-					if(type.equals("C")){
-						typ=MsgType.CHAT;
-						msg1=new Message(typ,content);
-					}
-					else if(type.equals("CO")){
-						typ=MsgType.COORDINATES;
-						msg1=new Message(typ,content);
-					}
-					else if(type.equals("RESULTS")){
-						typ=MsgType.RESULTS;
-						//content=GameBoardPrinter.getBoardString(gm);
-						msg1=new Message(typ,gm);
-
-					}
-					else if(type.equals("S")) {
-						typ=MsgType.SAVE_GAME;
-						System.out.println("Podaj nazwe pliku");
-						String filename=input.nextLine();
-						saveToFile(filename);
-						msg1=new Message(typ,"");
-					}
-
+					System.out.println(GameBoardPrinter.getBoardString(gm));
+				}
+				else if(msg2.msgType==MsgType.CHAT){
+					System.out.println(msg2.msgContent);
+				}
+				else if(msg2.msgType==MsgType.RESULTS){
+					System.out.println("Wygrales!");
+					MsgType typee=MsgType.RESULTS;
+					//String contentt=GameBoardPrinter.getBoardString(gm);
+					Message last_msg=new Message(typee,gm);
 					try{
-						sendMessageToOpponent(msg1);
+						sendMessageToOpponent(last_msg);
 					}
 					catch(Exception e){
 						System.out.println("exception");
 					}
-					if(type.equals("S")){
-						break;
-					}
+					break;
+				}
+				else if(msg2.msgType==MsgType.WAS_HIT){
+					System.out.println("Trafiles przeciwnika, strzelaj jeszcze raz");
+				}
+				System.out.println("Podaj typ wiadomosci (CHAT(C), COORDINATES(CO),ZAPISZ GRE(S), ZAKONCZ GRE(E))");
+				String type=input.nextLine();
+				if(type.equals("E")){
+					breaking=true;
+					break;
 				}
 
+				System.out.println("Podaj tresc wiadomosci");
+				String content=input.nextLine();
+
+
+				MsgType typ=MsgType.CHAT;
+				Message msg1=new Message();
+				if(type.equals("C")){
+					typ=MsgType.CHAT;
+					msg1=new Message(typ,content);
+				}
+				else if(type.equals("CO")){
+					typ=MsgType.COORDINATES;
+					msg1=new Message(typ,content);
+				}
+				else if(type.equals("RESULTS")){
+					typ=MsgType.RESULTS;
+					//content=GameBoardPrinter.getBoardString(gm);
+					msg1=new Message(typ,gm);
+
+				}
+				else if(type.equals("S")) {
+					typ=MsgType.SAVE_GAME;
+					System.out.println("Podaj nazwe pliku");
+					String filename=input.nextLine();
+					saveToFile(filename);
+					msg1=new Message(typ,"");
+				}
+
+				try{
+					sendMessageToOpponent(msg1);
+				}
+				catch(Exception e){
+					System.out.println("exception");
+				}
+				if(type.equals("S")){
+					break;
+				}
 			}
+
+
 			if(breaking==true){
 				MsgType m=MsgType.RESULTS2;
 				//String cnt=GameBoardPrinter.getBoardString(gm);
@@ -677,7 +549,7 @@ public class Client {
 				}
 				input.close();
 				}*/
-	while(true){}
+			while(true){}
 		}
 		else if (wybor==3){
 			input.close();
