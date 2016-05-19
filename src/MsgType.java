@@ -1,0 +1,5 @@
+
+public enum MsgType {
+	COORDINATES, RESULTS, CHAT, RESULTS2, BREAK, READY, SAVE_GAME
+}
+
