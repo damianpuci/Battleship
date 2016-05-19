@@ -212,9 +212,6 @@ public class Client {
 
 				}
 
-
-
-				//gm.setGameBoard();
 				System.out.println(GameBoardPrinter.getBoardString(gm));
 			}
 			else{
@@ -262,7 +259,7 @@ public class Client {
 				}
 				else if(type.equals("RESULTS")){
 					typ=MsgType.RESULTS;
-					//content=GameBoardPrinter.getBoardString(gm);
+					
 					msg1=new Message(typ,gm);
 
 				}
@@ -302,7 +299,7 @@ public class Client {
 					System.out.println(msg2.g.convertBoardToString());
 					System.out.println("Przeciwnik wyszedl z gry, wygrales walkowerem!");
 					MsgType m=MsgType.RESULTS2;
-					//String cnt=GameBoardPrinter.getBoardString(gm);
+					
 					Message msg=new Message(m,gm);
 					try{
 						sendMessageToOpponent(msg);
@@ -360,77 +357,6 @@ public class Client {
 
 
 						}
-
-
-						//						if(gm.fieldsLeft==1){
-						//							System.out.println("Przegrales");
-						//							MsgType typee=MsgType.RESULTS;
-						//							//String contentt=GameBoardPrinter.getBoardString(gm);
-						//							Message last_msg=new Message(typee,gm);
-						//							try{
-						//								sendMessageToOpponent(last_msg);
-						//							}
-						//							catch(Exception e){
-						//								System.out.println("exception");
-						//							}
-						//							break;
-						//						}
-						//
-						//						else{
-						//							while((gm.boardArray[x][y]==1 || gm.boardArray[x][y]==2) && gm.fieldsLeft!=0){
-						//								if(gm.fieldsLeft==1){
-						//									end_game=true;
-						//									System.out.println("Przegrales");
-						//									MsgType typee=MsgType.RESULTS;
-						//									System.out.println(gm.fieldsLeft);
-						//									//String contentt=GameBoardPrinter.getBoardString(gm);
-						//									Message last_msg=new Message(typee,gm);
-						//									try{
-						//										sendMessageToOpponent(last_msg);
-						//									}
-						//									catch(Exception e){
-						//										System.out.println("exception");
-						//									}
-						//									break;
-						//								}
-						//
-						//								gm.checkField(x, y);
-						//								MsgType typee=MsgType.CHAT;
-						//								String contentt="Trafiles w statek przeciwnika!";
-						//								Message last_msg=new Message(typee,contentt);
-						//								try{
-						//									sendMessageToOpponent(last_msg);
-						//								}
-						//								catch(Exception e){
-						//									System.out.println("exception");
-						//								}
-						//
-						//								Message last_msg2=new Message();
-						//								try{
-						//									last_msg2=getMessageFromOpponent();
-						//								}
-						//								catch(Exception e){
-						//									System.out.println("exception");
-						//								}
-						//								String coordinate2=last_msg2.msgContent;
-						//								x=0;
-						//								y=0;
-						//
-						//								for(int i=0;i<10;i++){
-						//									for(int j=0;j<10;j++){
-						//										if(pola[i][j].equals((String)coordinate2)){
-						//											x=i;
-						//											y=j;
-						//
-						//										}
-						//									}
-						//								}
-						//
-						//							}
-						//							if(end_game==true){
-						//								break;
-						//							}
-						//						}
 						continue;
 					}
 					else{
@@ -445,7 +371,7 @@ public class Client {
 				else if(msg2.msgType==MsgType.RESULTS){
 					System.out.println("Wygrales!");
 					MsgType typee=MsgType.RESULTS;
-					//String contentt=GameBoardPrinter.getBoardString(gm);
+					
 					Message last_msg=new Message(typee,gm);
 					try{
 						sendMessageToOpponent(last_msg);
@@ -481,7 +407,7 @@ public class Client {
 				}
 				else if(type.equals("RESULTS")){
 					typ=MsgType.RESULTS;
-					//content=GameBoardPrinter.getBoardString(gm);
+					
 					msg1=new Message(typ,gm);
 
 				}
@@ -507,7 +433,7 @@ public class Client {
 
 			if(breaking==true){
 				MsgType m=MsgType.RESULTS2;
-				//String cnt=GameBoardPrinter.getBoardString(gm);
+				
 				Message msg=new Message(m,gm);
 				try{
 					sendMessageToOpponent(msg);
@@ -531,24 +457,6 @@ public class Client {
 				input.close();
 			}
 
-			/*else{
-				System.out.println("Plansza przeciwnika wygladala nastepujaco:");
-
-
-				Message msg2=new Message();
-
-				try{
-					msg2=getMessageFromOpponent();
-				}
-				catch(Exception e){
-					System.out.println("exception");
-				}
-				System.out.println(msg2.msgContent);
-				if(msg2.msgType==MsgType.RESULTS2){
-					System.out.println("Przeciwnik wyszedl z gry, wygrales walkowerem");
-				}
-				input.close();
-				}*/
 			while(true){}
 		}
 		else if (wybor==3){
