@@ -242,7 +242,7 @@ public class Client {
 					System.out.println("Podaj typ wiadomosci (CHAT(C), COORDINATES(CO),ZAPISZ GRE(S), ZAKONCZ GRE(E))");
 					String type=input.nextLine();
 					if(type.equals("E")){
-						breaking=true;
+						breaking = true;
 						break;
 					}
 
