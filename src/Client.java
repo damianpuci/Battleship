@@ -11,6 +11,8 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import org.apache.commons.codec.digest.DigestUtils;
+
 
 public class Client {
 	static ServerSocket serverSocket;
@@ -23,6 +25,8 @@ public class Client {
 	static GameBoard gm = new GameBoard();
 	static GameBoard opponent_gm=new GameBoard();
 	static boolean end_game=false;
+	static String opponentSHA1;
+	static String mySHA1;
 
 	public Client(){
 
@@ -218,8 +222,8 @@ public class Client {
 				System.out.println("Podaj nazwe wczytywanego pliku");
 				loadFromFile(input.nextLine());
 			}
-
-			Message msg_1=new Message(MsgType.READY, gm.convertBoardToString());
+			mySHA1=DigestUtils.sha1Hex(gm.convertBoardToString());
+			Message msg_1=new Message(MsgType.READY, mySHA1);
 			try{
 				sendMessageToOpponent(msg_1);
 			}
@@ -233,7 +237,8 @@ public class Client {
 			catch(Exception e){
 				System.out.println(e);
 			}
-			System.out.println(msg_2.msgContent);
+			opponentSHA1=msg_2.msgContent;
+			
 
 
 			if(choice_int==1){
@@ -332,7 +337,9 @@ public class Client {
 					}
 					if(gm.shoot(x,y)==true){
 						if(gm.anyShipsLeft()==false){
-							MsgType typee=MsgType.RESULTS;
+							System.out.println("Przeciwnik trafil w Twoj statek");
+							System.out.println(GameBoardPrinter.getBoardString(gm));
+							MsgType typee=MsgType.WON;
 							Message last_msg=new Message(typee,gm);
 							try{
 								sendMessageToOpponent(last_msg);
@@ -344,10 +351,10 @@ public class Client {
 						}
 						else{
 							System.out.println("Przeciwnik trafil w Twoj statek");
-
+							System.out.println(GameBoardPrinter.getBoardString(gm));
 
 							MsgType typee=MsgType.WAS_HIT;
-							Message last_msg=new Message(typee,gm);
+							Message last_msg=new Message(typee,"");
 							try{
 								sendMessageToOpponent(last_msg);
 							}
@@ -368,9 +375,13 @@ public class Client {
 				else if(msg2.msgType==MsgType.CHAT){
 					System.out.println(msg2.msgContent);
 				}
-				else if(msg2.msgType==MsgType.RESULTS){
+				else if(msg2.msgType==MsgType.WON){
 					System.out.println("Wygrales!");
-					MsgType typee=MsgType.RESULTS;
+					System.out.println("Plansza przeciwnika wygladala nastepujaco:");
+					System.out.println(GameBoardPrinter.getBoardString(msg2.g));
+					System.out.print(DigestUtils.sha1Hex(msg2.g.convertBoardToString())+ "=?");
+					System.out.println(opponentSHA1);
+					MsgType typee=MsgType.LOST;
 					
 					Message last_msg=new Message(typee,gm);
 					try{
@@ -384,6 +395,15 @@ public class Client {
 				else if(msg2.msgType==MsgType.WAS_HIT){
 					System.out.println("Trafiles przeciwnika, strzelaj jeszcze raz");
 				}
+				
+				else if(msg2.msgType==MsgType.LOST){
+					System.out.println("Plansza przeciwnika wygladala nastepujaco:");
+					System.out.println(GameBoardPrinter.getBoardString(msg2.g));
+					System.out.print(DigestUtils.sha1Hex(msg2.g.convertBoardToString())+ "=?");
+					System.out.println(opponentSHA1);
+					break;
+				}
+				
 				System.out.println("Podaj typ wiadomosci (CHAT(C), COORDINATES(CO),ZAPISZ GRE(S), ZAKONCZ GRE(E))");
 				String type=input.nextLine();
 				if(type.equals("E")){
@@ -457,7 +477,7 @@ public class Client {
 				input.close();
 			}
 
-			while(true){}
+			
 		}
 		else if (wybor==3){
 			input.close();
