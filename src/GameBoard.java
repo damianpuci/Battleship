@@ -1,7 +1,12 @@
+
+import java.io.ByteArrayOutputStream;
+
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 public class GameBoard implements Serializable{
-	
+	public int id;
+	public String saving_name="";
 	protected int[ ][ ] boardArray = new int[10][10];
 	int fieldsLeft;
 	public GameBoard(){
@@ -14,8 +19,23 @@ public class GameBoard implements Serializable{
 
 	}
 	
-	
-	
+	public String saveToString() {
+        String result = "";
+        try {
+           ByteArrayOutputStream bo = new ByteArrayOutputStream();
+           ObjectOutputStream so = new ObjectOutputStream(bo);
+           so.writeObject(this);
+           so.flush();
+           result = bo.toString();
+       } catch (Exception e) {
+           System.out.println(e);
+       }
+       return result;
+    }
+
+
+
+    
 	
 	private boolean putShipPart(int x, int y) {
 		if(x>9 || x<0 || y>9 || y<0){

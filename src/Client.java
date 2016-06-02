@@ -1,16 +1,20 @@
-import java.io.File;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Scanner;
-
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import org.apache.commons.codec.digest.DigestUtils;
 
 
@@ -21,58 +25,92 @@ public class Client {
 	static ObjectInputStream ois;
 	static OutputStream os;
 	static ObjectOutputStream oos;
-	static boolean breaking=false;
 	static GameBoard gm = new GameBoard();
-	static GameBoard opponent_gm=new GameBoard();
+
+	static boolean breaking=false;
 	static boolean end_game=false;
+
 	static String opponentSHA1;
 	static String mySHA1;
+
+	public static final String DRIVER = "org.sqlite.JDBC";
+	public static final String DB_URL = "jdbc:sqlite:Battleship.db";
+
+	private static Connection conn;
+	private static Statement stat;
 
 	public Client(){
 
 	}
 
-	static boolean saveToFile(String filename){
+	public static boolean createTable()  {
+		String createGameBoard = "CREATE TABLE IF NOT EXISTS GameBoard (id INTEGER PRIMARY KEY AUTOINCREMENT, saving_name varchar(255),boardArray varchar(255), fieldsLeft int )";
 
-		PrintWriter zapis;
-		try{
-			zapis = new PrintWriter(filename);
-		}
-		catch (Exception e){
-			System.out.println(e);
+		try {
+			stat.execute(createGameBoard);
+
+		} catch (SQLException e) {
+			System.err.println("Error during creating table.");
+			e.printStackTrace();
 			return false;
 		}
-		for(int i=0;i<10;i++){
-			for(int j=0;j<10;j++){
-				zapis.print(gm.boardArray[i][j]+" ");
-			}
-			zapis.println();
-		}
-
-		//zapis.println(GameBoardPrinter.getBoardString(opponent_gm));
-		zapis.close();
 		return true;
 	}
 
-	static void loadFromFile(String filename){
-		Scanner odczyt = null;
-		try{
-			odczyt = new Scanner(new File(filename));
+	public static boolean insertGameBoard(String filename){
+		try {
+			PreparedStatement prepStmt = conn.prepareStatement(
+					"insert into GameBoard values (NULL,?, ?, ?);");
+			prepStmt.setString(1, filename);
+			prepStmt.setString(2, gm.saveToString());
+			prepStmt.setInt(3, gm.fieldsLeft);
+			prepStmt.execute();
+		} catch (SQLException e) {
+			System.err.println("Blad przy wstawianiu czytelnika");
+			e.printStackTrace();
+			return false;
 		}
-		catch (Exception e){
-			System.out.println(e);
-		}
-		for(int i=0;i<10;i++){
-			for(int j=0;j<10;j++){
-				gm.boardArray[i][j]=odczyt.nextInt();
-			}
-		}
-
+		return true;
 	}
 
 
+	public static GameBoard loadFromString(String serObj) {
+		GameBoard gm=new GameBoard();
+		try {
+			byte b[] = serObj.getBytes(); 
+			ByteArrayInputStream bi = new ByteArrayInputStream(b);
+			ObjectInputStream si = new ObjectInputStream(bi);
+			gm = (GameBoard) si.readObject();
+
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+		return gm;
+	}
 
 
+	public static String selectGameBoard(String savingName) {
+		String gameBoard="";
+		try {
+			String query = "SELECT boardArray FROM GameBoard WHERE saving_name LIKE '%"+ savingName + "'";
+			ResultSet result =stat.executeQuery(query);
+			gameBoard = result.getString("boardArray");
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+		return gameBoard;
+	}
+
+
+	public static void closeConnection1() {
+		try {
+			conn.close();
+		} catch (SQLException e) {
+			System.err.println("Problem with closing connection");
+			e.printStackTrace();
+		}
+	}
 
 	static void startServer(int port)throws IOException {
 		serverSocket = new ServerSocket(port);	
@@ -112,6 +150,23 @@ public class Client {
 		ois.close();
 	}
 	public static void main(String[] argc){
+		try {
+			Class.forName(Client.DRIVER);
+		} catch (ClassNotFoundException e) {
+			System.err.println("There is no JDBC driver.");
+			e.printStackTrace();
+		}
+
+		try {
+			conn = DriverManager.getConnection(DB_URL);
+			stat = conn.createStatement();
+		} catch (SQLException e) {
+			System.err.println("Problem with opening connection.");
+			e.printStackTrace();
+		}
+		createTable();
+
+
 
 		String[][] pola=new String[10][10];
 		for(int i=0;i<10;i++){
@@ -122,25 +177,25 @@ public class Client {
 
 		Scanner input = new Scanner(System.in);
 
-		System.out.println("1. Graj");
-		System.out.println("2. Wczytaj gre");
-		System.out.println("3. Zakoncz gre");
+		System.out.println("1. Graj.");
+		System.out.println("2. Wczytaj gre.");
+		System.out.println("3. Zakoncz gre.");
 		String choice_str1=input.nextLine();
 		int wybor=Integer.parseInt(choice_str1);
 		boolean load_flag=false;
 		if(wybor==2) load_flag=true;
 		if(wybor!=3){
 
-			System.out.println("1. Stworz serwer");
-			System.out.println("2. Polacz z serwerem");
-			System.out.println("3. Zakoncz gre");
+			System.out.println("1. Stworz serwer.");
+			System.out.println("2. Polacz z serwerem.");
+			System.out.println("3. Zakoncz gre.");
 
 			String choice=input.nextLine();
 			int choice_int=Integer.parseInt(choice);
 
 			switch(choice_int){
 			case(1):
-				System.out.println("Podaj numer portu");
+				System.out.println("Podaj numer portu:");
 			int port;
 			String port_str=input.nextLine();
 			port=Integer.parseInt(port_str);
@@ -158,11 +213,11 @@ public class Client {
 			}
 			break;
 			case(2):
-				System.out.println("Podaj numer portu");
+				System.out.println("Podaj numer portu:");
 			int port2;
 			String port_str2=input.nextLine();
 			port2=Integer.parseInt(port_str2);
-			System.out.println("Podaj ip");
+			System.out.println("Podaj ip serwera:");
 			String ip=input.nextLine();
 			try{
 				connectToServer(ip, port2);
@@ -195,11 +250,12 @@ public class Client {
 						else{
 							System.out.println("Prosze podac orientacje statku " + s.name + " (pionowa/pozioma).\n");
 							text = input.nextLine();
-							System.out.println("Prosze podac pole, na ktorym bedzie sie znajdowac poczatek statku(przy orientacji pionowej gorny wierzcholek, przy orientacji poziomej lewy wierzcholek)\n");
+							System.out.println("Prosze podac pole, na ktorym bedzie sie znajdowac poczatek statku np. B3 (przy orientacji pionowej gorny wierzcholek, przy orientacji poziomej lewy wierzcholek)\n");
 							text2 = input.nextLine();
 						}	
-						x=0;
-						y=0;
+						x=-1;
+						y=-1;
+
 						for(int i=0;i<10;i++){
 							for(int j=0;j<10;j++){
 								if(pola[i][j].equals((String)text2)){
@@ -210,6 +266,7 @@ public class Client {
 							}
 						}
 
+
 					}
 					while(gm.putShip(s.type, text, x, y)==false);
 
@@ -219,8 +276,9 @@ public class Client {
 				System.out.println(GameBoardPrinter.getBoardString(gm));
 			}
 			else{
-				System.out.println("Podaj nazwe wczytywanego pliku");
-				loadFromFile(input.nextLine());
+				System.out.println("Podaj nazwe wczytywanego zapisu:");
+				String name=input.nextLine();
+				gm=loadFromString(selectGameBoard(name));			
 			}
 			mySHA1=DigestUtils.sha1Hex(gm.convertBoardToString());
 			Message msg_1=new Message(MsgType.READY, mySHA1);
@@ -238,19 +296,25 @@ public class Client {
 				System.out.println(e);
 			}
 			opponentSHA1=msg_2.msgContent;
-			
+
 
 
 			if(choice_int==1){
-				System.out.println("Podaj typ wiadomosci (CHAT(C), COORDINATES(CO),ZAPISZ GRE(S), ZAKONCZ GRE(E))");
-				String type=input.nextLine();
+				String type="";
+				while(true){
+					System.out.println("czat(C), strzelaj(CO), zapisz gre(S), zakoncz gre(E))");
+					type=input.nextLine();
+					if (type.equals("C") || type.equals("CO") || type.equals("S") || type.equals("E")) break;
+				}
+
 				if(type.equals("E")){
 					breaking = true;
 				}
-
-				System.out.println("Podaj tresc wiadomosci");
-				String content=input.nextLine();
-
+				String content="";
+				if(type.equals("C") || type.equals("CO")){
+					System.out.println("Podaj tresc wiadomosci:");
+					content=input.nextLine();
+				}
 
 				MsgType typ=MsgType.CHAT;
 				Message msg1=new Message();
@@ -264,16 +328,17 @@ public class Client {
 				}
 				else if(type.equals("RESULTS")){
 					typ=MsgType.RESULTS;
-					
+
 					msg1=new Message(typ,gm);
 
 				}
 				else if(type.equals("S")) {
 					typ=MsgType.SAVE_GAME;
-					System.out.println("Podaj nazwe pliku");
+					System.out.println("Podaj nazwe zapisu:");
 					String filename=input.nextLine();
-					saveToFile(filename);
+					insertGameBoard(filename);
 					msg1=new Message(typ,"");
+					closeConnection1();
 				}
 
 				try{
@@ -282,8 +347,7 @@ public class Client {
 				catch(Exception e){
 					System.out.println("exception");
 				}
-				if(type.equals("S")){
-				}
+
 			}
 
 
@@ -295,7 +359,7 @@ public class Client {
 					msg2=getMessageFromOpponent();
 				}
 				catch(Exception e){
-					System.out.println("Nie udalo sie odebrac wiadomosci");
+					System.out.println("Error while receiving message.");
 				}
 				if(msg2.msgType==MsgType.RESULTS2){
 					System.out.println("Plansza przeciwnika wygladala nastepujaco:");
@@ -304,7 +368,7 @@ public class Client {
 					System.out.println(msg2.g.convertBoardToString());
 					System.out.println("Przeciwnik wyszedl z gry, wygrales walkowerem!");
 					MsgType m=MsgType.RESULTS2;
-					
+
 					Message msg=new Message(m,gm);
 					try{
 						sendMessageToOpponent(msg);
@@ -316,9 +380,10 @@ public class Client {
 					break;
 				}
 				else if(msg2.msgType==MsgType.SAVE_GAME){
-					System.out.println("Przeciwnik chce zapisac gre, podaj nazwe pliku");
+					System.out.println("Przeciwnik chce zapisac gre, podaj nazwe zapisu");
 					String filename=input.nextLine();
-					saveToFile(filename);
+					insertGameBoard(filename);
+					closeConnection1();
 					break;
 				}
 				else if(msg2.msgType==MsgType.COORDINATES){
@@ -337,7 +402,7 @@ public class Client {
 					}
 					if(gm.shoot(x,y)==true){
 						if(gm.anyShipsLeft()==false){
-							System.out.println("Przeciwnik trafil w Twoj statek");
+							System.out.println("Przeciwnik trafil w Twoj statek.");
 							System.out.println(GameBoardPrinter.getBoardString(gm));
 							MsgType typee=MsgType.WON;
 							Message last_msg=new Message(typee,gm);
@@ -350,7 +415,7 @@ public class Client {
 
 						}
 						else{
-							System.out.println("Przeciwnik trafil w Twoj statek");
+							System.out.println("Przeciwnik trafil w Twoj statek.");
 							System.out.println(GameBoardPrinter.getBoardString(gm));
 
 							MsgType typee=MsgType.WAS_HIT;
@@ -359,7 +424,7 @@ public class Client {
 								sendMessageToOpponent(last_msg);
 							}
 							catch(Exception e){
-								System.out.println("exception");
+								System.out.println("Cannot send message.");
 							}
 
 
@@ -367,7 +432,7 @@ public class Client {
 						continue;
 					}
 					else{
-						System.out.println("Przeciwnik chybil");
+						System.out.println("Przeciwnik chybil.");
 					}
 
 					System.out.println(GameBoardPrinter.getBoardString(gm));
@@ -379,10 +444,10 @@ public class Client {
 					System.out.println("Wygrales!");
 					System.out.println("Plansza przeciwnika wygladala nastepujaco:");
 					System.out.println(GameBoardPrinter.getBoardString(msg2.g));
-					System.out.print(DigestUtils.sha1Hex(msg2.g.convertBoardToString())+ "=?");
+					System.out.print(DigestUtils.sha1Hex(msg2.g.convertBoardToString())+ " =? ");
 					System.out.println(opponentSHA1);
 					MsgType typee=MsgType.LOST;
-					
+
 					Message last_msg=new Message(typee,gm);
 					try{
 						sendMessageToOpponent(last_msg);
@@ -393,9 +458,9 @@ public class Client {
 					break;
 				}
 				else if(msg2.msgType==MsgType.WAS_HIT){
-					System.out.println("Trafiles przeciwnika, strzelaj jeszcze raz");
+					System.out.println("Trafiles przeciwnika, strzelaj jeszcze raz.");
 				}
-				
+
 				else if(msg2.msgType==MsgType.LOST){
 					System.out.println("Plansza przeciwnika wygladala nastepujaco:");
 					System.out.println(GameBoardPrinter.getBoardString(msg2.g));
@@ -403,17 +468,22 @@ public class Client {
 					System.out.println(opponentSHA1);
 					break;
 				}
-				
-				System.out.println("Podaj typ wiadomosci (CHAT(C), COORDINATES(CO),ZAPISZ GRE(S), ZAKONCZ GRE(E))");
-				String type=input.nextLine();
-				if(type.equals("E")){
-					breaking=true;
-					break;
+
+				String type="";
+				while(true){
+					System.out.println("czat(C), strzelaj(CO), zapisz gre(S), zakoncz gre(E))");
+					type=input.nextLine();
+					if (type.equals("C") || type.equals("CO") || type.equals("S") || type.equals("E")) break;
 				}
 
-				System.out.println("Podaj tresc wiadomosci");
-				String content=input.nextLine();
-
+				if(type.equals("E")){
+					breaking = true;
+				}
+				String content="";
+				if(type.equals("C") || type.equals("CO")){
+					System.out.println("Podaj tresc wiadomosci:");
+					content=input.nextLine();
+				}
 
 				MsgType typ=MsgType.CHAT;
 				Message msg1=new Message();
@@ -427,15 +497,16 @@ public class Client {
 				}
 				else if(type.equals("RESULTS")){
 					typ=MsgType.RESULTS;
-					
+
 					msg1=new Message(typ,gm);
 
 				}
 				else if(type.equals("S")) {
 					typ=MsgType.SAVE_GAME;
-					System.out.println("Podaj nazwe pliku");
+					System.out.println("Podaj nazwe zapisu.");
 					String filename=input.nextLine();
-					saveToFile(filename);
+					insertGameBoard(filename);
+					closeConnection1();
 					msg1=new Message(typ,"");
 				}
 
@@ -443,7 +514,7 @@ public class Client {
 					sendMessageToOpponent(msg1);
 				}
 				catch(Exception e){
-					System.out.println("exception");
+					System.out.println("Cannot send message.");
 				}
 				if(type.equals("S")){
 					break;
@@ -453,13 +524,13 @@ public class Client {
 
 			if(breaking==true){
 				MsgType m=MsgType.RESULTS2;
-				
+
 				Message msg=new Message(m,gm);
 				try{
 					sendMessageToOpponent(msg);
 				}
 				catch(Exception e){
-					System.out.println("exception");
+					System.out.println("Cannot send message.");
 				}
 				System.out.println("Plansza przeciwnika wygladala nastepujaco:");
 				System.out.println(msg.g.convertBoardToString());
@@ -470,14 +541,14 @@ public class Client {
 					msg2=getMessageFromOpponent();
 				}
 				catch(Exception e){
-					System.out.println("exception");
+					System.out.println("Cannot receive message.");
 				}
 				System.out.println(GameBoardPrinter.getBoardString(msg2.g));
 
 				input.close();
 			}
 
-			
+
 		}
 		else if (wybor==3){
 			input.close();
